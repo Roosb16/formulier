@@ -15,18 +15,14 @@
         <form action="/login" method="post">
             <fieldset>
                 <legend>Vul je gegevens in</legend>
+                <input type="text" name="username" placeholder="Gebruikersnaam" required>
 
-                <label for="voornaam">Voornaam</label>
-                <input type="text" name="voornaam" required>
+                <input type="email" name="email" placeholder="Email" required>
 
-                <label for="email">Email</label>
-                <input type="email" name="email" required>
-
-                <label for="wachtwoord">Wachtwoord</label>
-                <input type="password" name="wachtwoord" required>
+                <input type="password" name="wachtwoord" placeholder="Wachtwoord" required>
 
 
-                <input type="submit" value="Submit this form">
+                <input type="submit" value="Login">
             </fieldset>
         </form>
 
