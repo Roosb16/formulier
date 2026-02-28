@@ -1,0 +1,22 @@
+fieldset{
+    display: grid;
+    grid-column: 1;
+    width: 20%;
+    margin: auto;
+}
+
+h1{
+    margin: auto;
+    text-align: center;
+    margin: 1rem 0rem;
+}
+
+label{
+    padding: .4rem
+}
+
+input:last-of-type{
+    margin-top: .4rem;
+    background-color: greenyellow;
+    border-radius: 0.4rem;
+}

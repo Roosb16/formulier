@@ -1,0 +1,10 @@
+[
+    {
+      "email": "test@mail.com",
+      "wachtwoord": "123"
+    },
+    {
+      "email": "roos@mail.com",
+      "wachtwoord": "456"
+    }
+  ]
