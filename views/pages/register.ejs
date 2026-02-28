@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <%- include('../partials/head') %>
+</head>
+
+<body class="container">
+    <header>
+        <%- include('../partials/header') %>
+    </header>
+
+    <main>
+        <h1>Registreren</h1>
+
+        <form action="/registreer" method="POST">
+            <input type="text" name="username" placeholder="Gebruikersnaam" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="wachtwoord" placeholder="Wachtwoord" required>
+            <button type="submit">Registreer</button>
+          </form>
+
+        <% if (error) { %>
+            <p><%= error %></p>
+        <% } %>
+    </main>
+    <footer>
+        <%- include('../partials/footer') %>
+    </footer>
+</body>
+
+</html>
