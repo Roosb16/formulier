@@ -1,65 +1,144 @@
-// dit is een boilerplate voor een node.js webserver met alle basis die je nodig hebt om je webserver aan de praat te krijgen
-// deze boilerplate is geen werkende webserver, maar een overzicht van de verschillende codefragmenten die je nodig hebt
-// kopieer deze dus niet integraal, maar zoek de stukjes die je nodig hebt en pas ze aan, zodat ze werken voor jouw project
-
-// Add info from .env file to process.env
-require('dotenv').config() 
-
-// Initialise Express webserver
+require('dotenv').config()
 const express = require('express')
+const { MongoClient } = require('mongodb')
+const bcrypt = require('bcryptjs')
+const validator = require('validator')
+const xss = require('xss')
+
 const app = express()
 
-app
-  .use(express.urlencoded({extended: true})) // middleware to parse form data from incoming HTTP request and add form fields to req.body
-  .use(express.static('static'))             // Allow server to serve static content such as images, stylesheets, fonts or frontend js from the directory named static
-  .set('view engine', 'ejs')                 // Set EJS to be our templating engine
-  .set('views', 'view')                      // And tell it the views can be found in the directory named view
+// --- Middleware ---
+app.use(express.urlencoded({ extended: true }))
+app.use(express.static('public'))
+app.set('view engine', 'ejs')
+app.set('views', 'views')
 
-// Use MongoDB
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
-// Construct URL used to connect to database from info in the .env file
+// --- MongoDB ---
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}/${process.env.DB_NAME}?retryWrites=true&w=majority`
-// Create a MongoClient
-const client = new MongoClient(uri, {
-    serverApi: {
-      version: ServerApiVersion.v1,
-      strict: true,
-      deprecationErrors: true,
-    }
-})
+const client = new MongoClient(uri)
 
-// Try to open a database connection
-client.connect()
-  .then(() => {
-    console.log('Database connection established')
-  })
-  .catch((err) => {
-    console.log(`Database connection error - ${err}`)
-    console.log(`For uri - ${uri}`)
-  })
+async function startServer() {
+  try {
+    await client.connect()
+    console.log('Database connected')
 
-// A sample route, replace this with your own routes
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
+    const db = client.db(process.env.DB_NAME)
+    const PORT = process.env.PORT || 3000
 
-// Middleware to handle not found errors - error 404
-app.use((req, res) => {
-  // log error to console
-  console.error('404 error at URL: ' + req.url)
-  // send back a HTTP response with status code 404
-  res.status(404).send('404 error at URL: ' + req.url)
-})
+    // --- ROUTES ---
+    app.get('/', (req, res) => {
+      res.render('pages/home')
+    })
 
-// Middleware to handle server errors - error 500
-app.use((err, req, res) => {
-  // log error to console
-  console.error(err.stack)
-  // send back a HTTP response with status code 500
-  res.status(500).send('500: server error')
-})
+    // ABOUT PAGE
+    app.get('/about', function (req, res) {
+      const data = {
+        moviename: "The Lord of the Rings"
+      }
+      res.render('pages/about', { data: data })
+    });
 
-// Start the webserver and listen for HTTP requests at specified port
-app.listen(process.env.PORT, () => {
-  console.log(`I did not change this message and now my webserver is listening at port ${process.env.PORT}`)
-})
+    // REGISTER FORM
+    app.get('/register', (req, res) => {
+      res.render('pages/register', { error: "" })
+    })
+
+    // REGISTER POST
+    app.post('/register', async (req, res) => {
+      try {
+        let { username, email, wachtwoord } = req.body
+
+        //SANITISE
+        username = xss(username)
+        email = xss(email)
+
+        // VALIDATE
+        if (!validator.isLength(username, { min: 3 })) {
+          return res.render('pages/register', { error: "Username moet minimaal 3 tekens zijn" })
+        }
+
+        if (!validator.isEmail(email)) {
+          return res.render('pages/register', { error: "Ongeldig emailadres" })
+        }
+
+        if (!validator.isLength(wachtwoord, { min: 6 })) {
+          return res.render('pages/register', { error: "Wachtwoord moet minimaal 6 tekens zijn" })
+        }
+
+        // Check of gebruiker al bestaat
+        const bestaandeUser = await db.collection('gebruikers').findOne({ email })
+        if (bestaandeUser) {
+          return res.render('pages/register', { error: "Email bestaat al" })
+        }
+
+        // HASH WACHTWOORD
+        const hashedPassword = await bcrypt.hash(wachtwoord, 10)
+
+        // Opslaan in database
+        await db.collection('gebruikers').insertOne({
+          username,
+          email,
+          wachtwoord: hashedPassword
+        })
+
+        res.render('pages/submitted', { user: { username } })
+
+      } catch (err) {
+        console.error(err)
+        res.status(500).send('Server error bij registratie')
+      }
+    })
+
+    // LOGIN FORM
+    app.get('/login', (req, res) => {
+      res.render('pages/loginform', { error: "" })
+    })
+
+    // LOGIN POST
+    app.post('/login', async (req, res) => {
+      try {
+        let { email, wachtwoord } = req.body
+
+        email = xss(email)
+
+        const gebruiker = await db.collection('gebruikers').findOne({ email })
+
+        if (!gebruiker) {
+          return res.render('pages/loginform', { error: "Gebruiker niet gevonden" })
+        }
+
+        const isMatch = await bcrypt.compare(wachtwoord, gebruiker.wachtwoord)
+
+        if (!isMatch) {
+          return res.render('pages/loginform', { error: "Wachtwoord klopt niet" })
+        }
+
+        res.render('pages/submitted', { user: gebruiker })
+
+      } catch (err) {
+        console.error(err)
+        res.status(500).send('Server error bij login')
+      }
+    })
+
+    // TEST ROUTE
+    app.get('/test-db', async (req, res) => {
+      const users = await db.collection('gebruikers').find().toArray()
+      res.send(users)
+    })
+
+    // 404
+    app.use((req, res) => {
+      res.status(404).send("404 - Pagina niet gevonden")
+    })
+
+    app.listen(PORT, () => {
+      console.log(`Server draait op http://localhost:${PORT}`)
+    })
+
+  } catch (err) {
+    console.error('Database connectie mislukt:', err)
+  }
+}
+
+startServer()
