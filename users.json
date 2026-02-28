@@ -6,5 +6,10 @@
     {
       "email": "roos@mail.com",
       "wachtwoord": "456"
+    },
+
+    {
+      "email": "roos.buskermolen@hva.nl",
+      "wachtwoord": "789"
     }
   ]
