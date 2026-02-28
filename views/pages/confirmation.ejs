@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+  <link rel="stylesheet" href="style/style.css">
+  <%- include('../partials/head'); %>
+</head>
+
+<body class="container">
+
+  <header>
+    <%- include('../partials/header'); %>
+  </header>
+
+  <main>
+    <div class="jumbotron">
+        <h1>Bedankt voor het aanmaken van je account, <%= username %>!</h1>
+        <p>Je kunt nu <a href="/login">inloggen</a>.</p>
+    </div>
+  </main>
+
+  <footer>
+    <%- include('../partials/footer'); %>
+  </footer>
+
+</body>
+
+</html>
